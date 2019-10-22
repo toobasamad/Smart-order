@@ -1,0 +1,317 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.Runtime.InteropServices;
+
+
+namespace SmartOrder
+    
+{
+    public partial class frmUserRegistration : Form
+    {
+        DataTable UserTab,EmpTab;
+        int RowIndex;
+        
+        public frmUserRegistration()
+        {
+            InitializeComponent();
+        }
+       
+
+        
+        private void lAdd_Click(object sender, EventArgs e)
+        {
+            if (txtUserName.Text == string.Empty || txtPassword.Text == string.Empty || cmbEmployeeId.Text == "SELECT")
+            {
+                MessageBox.Show("Complete all feilds", "Required feilds empty", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else
+            {
+                if (UserLogin.IsExist(txtUserName.Text))
+                {
+
+                    MessageBox.Show(txtUserName.Text + " Already Exists Try Unique User Name ", "User Name Reserved", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    txtUserName.Focus();
+                }
+                else
+                {
+                    if (Employee.IsExist(cmbEmployeeId.Text))
+                    {
+
+
+                        string status, type;
+                        if (rActive.Checked)
+                        {
+                            status = "Active";
+                        }
+                        else
+                        {
+                            status = "Deactive";
+                        }
+                        if (rAdmin.Checked)
+                        {
+                            type = "Admin";
+                        }
+                        else
+                        {
+                            type = "User";
+                        }
+                       
+
+                        if (UserLogin.InsertRecord(txtUserName.Text, txtPassword.Text, cmbEmployeeId.Text, status, type))
+                        {
+                            UserTab = UserLogin.GetTable();
+                            notifyIcon1.ShowBalloonTip(200, "Records Added", "Added", ToolTipIcon.Info);
+                            txtUserName.Clear();
+                            cmbEmployeeId.Text = "SELECT";
+                            rActive.Checked = true;
+                            rUser.Checked = true;
+
+                            txtPassword.Clear();
+                        }
+                        else
+                        {
+                            notifyIcon1.ShowBalloonTip(200, "Records can't be Added", "Cannot Added", ToolTipIcon.Info);
+                        }
+
+                    }
+                    else
+                    {
+                        MessageBox.Show(cmbEmployeeId.Text + "Employee Id does not exit find a valid employee Id", "Employee Id mismatch", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        cmbEmployeeId.Focus();
+                    }
+                }
+            }  
+
+        }
+
+        private void frmUserRegistration_Load(object sender, EventArgs e)
+        {
+            //axGrFingerXCtrl1.Initialize();
+           // axGrFingerXCtrl1.CapInitialize();
+            UserTab = UserLogin.GetTable();
+            EmpTab = Employee.GetTable();
+            cmbEmployeeId.DataSource = EmpTab;
+            cmbEmployeeId.DisplayMember = "EmployeeId";
+            cmbEmployeeId.ValueMember = "EmployeeId";
+            cmbEmployeeId.Text = "SELECT";
+
+        }
+
+        private void lClear_Click(object sender, EventArgs e)
+        {
+            txtUserName.Clear();
+            cmbEmployeeId.Text = "SELECT";
+            rActive.Checked = true;
+            rUser.Checked = true;
+            txtPassword.Clear();
+
+        }
+
+       
+        private void lDelete_Click(object sender, EventArgs e)
+        {
+            
+            if (UserLogin.DeleteRecord(txtUserName.Text))
+            {
+                UserTab = UserLogin.GetTable();
+                notifyIcon1.ShowBalloonTip(200, "Records Deleted", "Deleted", ToolTipIcon.Info);
+                txtUserName.Clear();
+                cmbEmployeeId.Text = "SELECT";
+                rActive.Checked = true;
+                rUser.Checked = true;
+                txtPassword.Clear();
+            }
+           
+
+        }
+
+        private void lUpdate_Click(object sender, EventArgs e)
+        {
+           
+            string status, type;
+            if (rActive.Checked)
+            {
+                status = "Active";
+            }
+            else
+            {
+                status = "Deactive";
+            }
+            if (rAdmin.Checked)
+            {
+                type = "Admin";
+            }
+            else
+            {
+                type = "User";
+            }
+            
+
+            if (UserLogin.UpdateRecord(txtUserName.Text, txtPassword.Text, cmbEmployeeId.Text, status, type))
+            {
+                UserTab = UserLogin.GetTable();
+                notifyIcon1.ShowBalloonTip(200, "Records Updated", "Updated", ToolTipIcon.Info);
+                txtUserName.Clear();
+                cmbEmployeeId.Text = "SELECT";
+                rActive.Checked = true;
+                rUser.Checked = true;
+                txtPassword.Clear();
+            }
+            else
+            {
+                notifyIcon1.ShowBalloonTip(200, "Records can't be Updated", "Cannot Update", ToolTipIcon.Info);
+            }
+            
+
+        }
+        private void ShowData()
+        {
+            txtUserName.Text = UserTab.Rows[RowIndex].ItemArray[0].ToString();
+            txtPassword.Text = UserTab.Rows[RowIndex].ItemArray[1].ToString();
+            cmbEmployeeId.Text = UserTab.Rows[RowIndex].ItemArray[2].ToString();
+            string status = UserTab.Rows[RowIndex].ItemArray[3].ToString();
+            string type = UserTab.Rows[RowIndex].ItemArray[4].ToString();
+            if (status.ToUpper() == "ACTIVE")
+            {
+                rActive.Checked = true;
+            }
+            else
+            {
+                rDeactive.Checked = true;
+            }
+            if (type.ToUpper() == "ADMIN")
+            {
+                rAdmin.Checked = true;
+            }
+            else
+            {
+                rUser.Checked = true;
+            }
+
+        }
+
+        private void lFirst_Click(object sender, EventArgs e)
+        {
+            if (UserTab.Rows.Count > 0)
+            {
+                RowIndex = 0;
+                ShowData();
+            }
+        }
+
+        private void lLast_Click(object sender, EventArgs e)
+        {
+            if (UserTab.Rows.Count > 0)
+            {
+                RowIndex = UserTab.Rows.Count - 1;
+                ShowData();
+            }
+
+        }
+
+        private void lPrev_Click(object sender, EventArgs e)
+        {
+            if (UserTab.Rows.Count > 0)
+            {
+                if (RowIndex > 0)
+                {
+                    RowIndex--;
+                    ShowData();
+                }
+
+            }
+        }
+
+        private void lNext_Click(object sender, EventArgs e)
+        {
+            if (UserTab.Rows.Count > 0)
+            {
+                if (RowIndex < UserTab.Rows.Count - 1)
+                {
+                    RowIndex++;
+                    ShowData();
+                }
+
+            }
+        }
+
+        private void frmUserRegistration_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Form frm = null;
+            foreach (Form f in Application.OpenForms)
+            {
+                if (f.Name == "frmMain")
+                {
+                    frm = f;
+                }
+            }
+            if (frm != null)
+            {
+                frm.Show();
+            }
+        }
+
+        private void lEmployee_Click(object sender, EventArgs e)
+        {
+            frmEmployeeRegistration usrform = new frmEmployeeRegistration();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+
+        private void ldelivery_Click(object sender, EventArgs e)
+        {
+            FrmDelievery usrform = new FrmDelievery();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+
+        private void lCustomer_Click(object sender, EventArgs e)
+        {
+            frmCustomerRegistration usrform = new frmCustomerRegistration();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+
+        private void lDeals_Click(object sender, EventArgs e)
+        {
+            frmDeals usrform = new frmDeals();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+
+        private void lEmpAttendance_Click(object sender, EventArgs e)
+        {
+            Formidentify usrform = new Formidentify();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+
+        private void lEmpMain_Click(object sender, EventArgs e)
+        {
+            Form frm = null;
+            foreach (Form f in Application.OpenForms)
+            {
+                if (f.Name == "frmMain")
+                {
+                    frm = f;
+                }
+            }
+            if (frm != null)
+            {
+                frm.Show();
+            }
+        }
+
+    }
+}
