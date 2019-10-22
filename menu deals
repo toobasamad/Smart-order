@@ -1,0 +1,167 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Data;
+using System.Data.SqlClient;
+using SmartOrder.Properties;
+namespace SmartOrder
+{
+    class Deals
+    {
+
+        public static bool InsertRecord( string DealName, string DealContents, string Discount, string DealPrice)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "INSERT INTO Deals(DealName,DealContents,Discount,DealPrice) VALUES(@DealName,@DealContents,@Discount,@DealPrice)";
+           
+            cmd.Parameters.AddWithValue("@DealName", DealName);
+            cmd.Parameters.AddWithValue("@DealContents", DealContents);
+            cmd.Parameters.AddWithValue("@Discount", Discount);
+            cmd.Parameters.AddWithValue("@DealPrice", DealPrice);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool UpdateRecord(string DealName, string DealContents, string Discount, string DealPrice)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "UPDATE  Deals SET DealName=@DealName,DealContents=@DealContents,Discount=@Discount,DealPrice=@DealPrice WHERE DealName = @DealName";
+            cmd.Parameters.AddWithValue("@DealName", DealName);
+            cmd.Parameters.AddWithValue("@DealContents", DealContents);
+            cmd.Parameters.AddWithValue("@Discount", Discount);
+            cmd.Parameters.AddWithValue("@DealPrice", DealPrice);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool DeleteRecord(string DealName)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "DELETE FROM Deals WHERE DealName = @DealName";
+            cmd.Parameters.AddWithValue("@DealName", DealName);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static DataTable GetTable()
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM Deals";
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab;
+        }
+        public static string GetDealsData()
+        {
+            DataTable tab = GetTable();
+            string Result = "";
+            foreach (DataRow row in tab.Rows)
+            {
+                Result += row[0].ToString() +" "+ row[3].ToString() + "Rs"+ "\n";
+            }
+            return Result;
+        }
+        public static bool IsExist(string DealName)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM Deals WHERE DealName = @DealName";
+            cmd.Parameters.AddWithValue("@DealName", DealName);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab.Rows.Count > 0;
+        }
+        public static float DPrice(string DealName)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT DealPrice FROM Deals WHERE DealName=@DealName";
+            cmd.Parameters.AddWithValue("@DealName", DealName);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            if (tab.Rows.Count > 0)
+            {
+                float price;
+                float.TryParse(tab.Rows[0].ItemArray[0].ToString(), out price);
+                return price;
+            }
+            else
+            {
+
+
+                return 0;
+            }
+        }
+        public static float Discount(string DealName)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT Discount FROM Deals WHERE DealName=@DealName";
+            cmd.Parameters.AddWithValue("@DealName", DealName);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            if (tab.Rows.Count > 0)
+            {
+                float discount;
+                float.TryParse(tab.Rows[0].ItemArray[0].ToString(), out discount);
+                return discount;
+            }
+            else
+            {
+
+
+                return 0;
+            }
+        }
+       
+    }
+}
+
+
