@@ -1,0 +1,363 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.Runtime.InteropServices;
+
+namespace SmartOrder
+{
+    public partial class frmEmployeeRegistration : Form
+
+    {
+        DataTable EmpTab;
+        int RowIndex;
+        TRawImage rawimg;
+        TTemplate tpt = new TTemplate();
+        [DllImport("user32.dll", EntryPoint = "GetDC")]
+        public static extern IntPtr GetDC(IntPtr ptr);
+
+        [DllImport("user32.dll", EntryPoint = "ReleaseDC")]
+        public static extern IntPtr ReleaseDC(IntPtr hWnd, IntPtr hDc);
+
+
+
+        public frmEmployeeRegistration()
+        {
+            InitializeComponent();
+        }
+
+        private void axGrFingerXCtrl2_SensorPlug(object sender, AxGrFingerXLib._IGrFingerXCtrlEvents_SensorPlugEvent e)
+        {
+            axGrFingerXCtrl2.CapStartCapture(e.idSensor);
+        }
+
+        private void axGrFingerXCtrl2_SensorUnplug(object sender, AxGrFingerXLib._IGrFingerXCtrlEvents_SensorUnplugEvent e)
+        {
+            axGrFingerXCtrl2.CapStopCapture(e.idSensor);
+        }
+
+        private void axGrFingerXCtrl2_ImageAcquired(object sender, AxGrFingerXLib._IGrFingerXCtrlEvents_ImageAcquiredEvent e)
+        {
+            rawimg.img = e.rawImage;
+            rawimg.height = e.height;
+            rawimg.width = e.width;
+            rawimg.Res = e.res;
+            IntPtr hdc = GetDC(System.IntPtr.Zero);
+            Image handle = null;
+            tpt._size = (int)GrFingerXLib.GRConstants.GR_MAX_SIZE_TEMPLATE;
+
+            axGrFingerXCtrl2.CapRawImageToHandle(ref rawimg.img, rawimg.width, rawimg.height, hdc.ToInt32(), ref handle);
+            axGrFingerXCtrl2.Extract(ref rawimg.img, rawimg.width, rawimg.height, rawimg.Res, ref tpt._tpt, ref tpt._size, (int)GrFingerXLib.GRConstants.GR_DEFAULT_CONTEXT);
+            axGrFingerXCtrl2.BiometricDisplay(ref tpt._tpt, ref rawimg.img, rawimg.width, rawimg.height, rawimg.Res, hdc.ToInt32(), ref handle, (int)GrFingerXLib.GRConstants.GR_NO_CONTEXT);
+            //axGrFingerXCtrl1.BiometricDisplay(ref tpt._tpt, ref raw.img, raw.width, raw.height, raw.Res, hdc.ToInt32(), ref handle, (int)GrFingerXLib.GRConstants.GR_NO_CONTEXT);
+            picThumbPrint.Image = handle;
+
+        }
+
+        
+
+        private void lEmployeeClear_Click(object sender, EventArgs e)
+        {
+            
+            txtEmployeeName.Clear();
+            txtEmployeeAddress.Clear();
+            masktxtEmpCellno.Text = "92";
+            cmbEmployeeDesignation.Text = "SELECT";
+            txtEmployeeId.Text = getEmployeeId().ToString();
+            picThumbPrint.Image = null;
+            maskTxtCnic.Clear();
+        }
+
+        
+
+        private void frmEmployeeRegistration_Load(object sender, EventArgs e)
+        {
+            cmbEmployeeDesignation.SelectedIndex = 0;
+            txtEmployeeId.Text = getEmployeeId().ToString();
+            EmpTab = Employee.GetTable();
+            RowIndex = 0;
+            masktxtEmpCellno.Text = "92";
+            cmbEmployeeDesignation.Text = "SELECT";
+            axGrFingerXCtrl2.Initialize();
+            axGrFingerXCtrl2.CapInitialize();
+
+
+        }
+        private void frmEmployeeRegistration_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            axGrFingerXCtrl2.Finalize();
+            axGrFingerXCtrl2.Finalize();
+        }
+
+
+
+
+        private void lEmployeeAdd_Click_1(object sender, EventArgs e)
+        {
+            if (Employee.IsExistEmpCnic(maskTxtCnic.Text))
+            {
+                MessageBox.Show(" Employee already exist", "CNIC already exist", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtEmployeeName.Focus();
+            }
+            else
+            {
+                if (txtEmployeeName.Text == string.Empty || txtEmployeeAddress.Text == string.Empty ||  masktxtEmpCellno.Text == string.Empty || maskTxtCnic.Text == string.Empty)
+                {
+                    MessageBox.Show("Complete all feilds", "Required feilds empty", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    if (Employee.IsExist(txtEmployeeId.Text))
+                    {
+                        MessageBox.Show(txtEmployeeName.Text + " Already Exists Try Unique Employee Id ", "User Name Reserved", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        txtEmployeeId.Focus();
+                    }
+                    else
+                    {
+                        // EmpId check from employee tab if the forign key exist as pk in original table or not 
+                        System.Byte[] temp1 = new System.Byte[10000 + 1];
+                        System.Array.Copy(tpt._tpt, 0, temp1, 0, tpt._size);
+
+
+                        if (Employee.InsertRecord(getEmployeeId().ToString(), txtEmployeeName.Text, cmbEmployeeDesignation.Text, maskTxtCnic.Text, txtEmployeeAddress.Text,  masktxtEmpCellno.Text, temp1))
+                        {
+
+                            EmpTab = Employee.GetTable();
+                            notifyIcon1.ShowBalloonTip(200, "Records Add", "Added", ToolTipIcon.Info);
+                            txtEmployeeId.Text = getEmployeeId().ToString();
+
+                            txtEmployeeName.Clear();
+                            txtEmployeeAddress.Clear();
+                            masktxtEmpCellno.Text = "92";
+                            cmbEmployeeDesignation.Text = "SELECT";
+                            maskTxtCnic.Clear();
+                            picThumbPrint.Image = null;
+                        }
+                        else
+                        {
+                            notifyIcon1.ShowBalloonTip(200, "Records Add", "Cannot Added", ToolTipIcon.Info);
+                        }
+                    }
+                }
+            }
+        }
+    
+        private void ShowData()
+        {
+            txtEmployeeId.Text = EmpTab.Rows[RowIndex].ItemArray[0].ToString();
+            txtEmployeeName.Text = EmpTab.Rows[RowIndex].ItemArray[1].ToString();
+            cmbEmployeeDesignation.Text = EmpTab.Rows[RowIndex].ItemArray[2].ToString();
+            maskTxtCnic.Text = EmpTab.Rows[RowIndex].ItemArray[3].ToString();
+            txtEmployeeAddress.Text = EmpTab.Rows[RowIndex].ItemArray[4].ToString();
+            masktxtEmpCellno.Text = EmpTab.Rows[RowIndex].ItemArray[5].ToString();
+            
+        }
+
+
+        private void lEmployeeNext_Click(object sender, EventArgs e)
+        {
+            if (EmpTab.Rows.Count > 0)
+            {
+                if (RowIndex < EmpTab.Rows.Count - 1)
+                {
+                    RowIndex++;
+                    ShowData();
+                }
+
+            }
+
+        }
+
+        
+
+        private void lEmployeeUpdate_Click(object sender, EventArgs e)
+        {
+            System.Byte[] temp1 = new System.Byte[10000 + 1];
+            System.Array.Copy(tpt._tpt, 0, temp1, 0, tpt._size);
+
+            if (Employee.UpdateRecord(txtEmployeeId.Text, txtEmployeeName.Text, cmbEmployeeDesignation.Text, maskTxtCnic.Text, txtEmployeeAddress.Text,  masktxtEmpCellno.Text,temp1))
+            {
+                notifyIcon1.ShowBalloonTip(200, "Record Updated", "Updated", ToolTipIcon.Info);
+                txtEmployeeId.Text = getEmployeeId().ToString();
+                EmpTab = Employee.GetTable();
+                
+                txtEmployeeName.Clear();
+                txtEmployeeAddress.Clear();
+                cmbEmployeeDesignation.Text = "SELECT";
+                maskTxtCnic.Clear();
+                masktxtEmpCellno.Text = "92";
+                picThumbPrint.Image = null;
+            }
+            else
+            {
+                notifyIcon1.ShowBalloonTip(200, "Record is not updated", "Cannot Updated", ToolTipIcon.Info);
+            }
+
+        }
+
+        private void lEmployeeDelete_Click(object sender, EventArgs e)
+        {
+            if (Employee.DeleteRecord(txtEmployeeId.Text))
+            {
+                notifyIcon1.ShowBalloonTip(200, "Records has been deleted", "Deleted", ToolTipIcon.Info);
+                txtEmployeeId.Text = getEmployeeId().ToString();
+                EmpTab = Employee.GetTable();
+                
+                txtEmployeeName.Clear();
+                txtEmployeeAddress.Clear();
+                picThumbPrint.Image = null;
+                
+                cmbEmployeeDesignation.Text = "SELECT";
+                maskTxtCnic.Clear();
+                masktxtEmpCellno.Text = "92";
+                
+            }
+            else
+            {
+                notifyIcon1.ShowBalloonTip(200, "Record has not been deleted", "Not Deleted", ToolTipIcon.Info);
+            }
+
+        }
+
+        private void lEmployeePrev_Click(object sender, EventArgs e)
+        {
+            if (EmpTab.Rows.Count > 0)
+            {
+                if (RowIndex > 0)
+                {
+                    RowIndex--;
+                    ShowData();
+                }
+
+            }
+
+        }
+
+        private void lEmployeeFirst_Click(object sender, EventArgs e)
+        {
+            if (EmpTab.Rows.Count > 0)
+            {
+                RowIndex = 0;
+                ShowData();
+            }
+
+        }
+
+        private void lEmployeeLast_Click(object sender, EventArgs e)
+        {
+            if (EmpTab.Rows.Count > 0)
+            {
+
+                RowIndex = EmpTab.Rows.Count - 1;
+                ShowData();
+
+
+            }
+
+        }
+
+        private void lEmpAttendance_Click(object sender, EventArgs e)
+        {
+            Formidentify usrform = new Formidentify();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+        
+        private int getEmployeeId()
+        {
+            DataTable empTab;
+            int max = 0, id = 0;
+            empTab = Employee.GetTable();
+            foreach (DataRow drow in empTab.Rows)
+            {
+                id = int.Parse(drow.ItemArray[0].ToString());
+                if (id > max)
+                {
+                    max = id;
+
+                }
+
+
+            }
+
+            return max + 1;
+        }
+
+        private void lUser_Click_1(object sender, EventArgs e)
+        {
+            frmUserRegistration usrform = new frmUserRegistration();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+
+        private void frmEmployeeRegistration_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            Form frm = null;
+            foreach (Form f in Application.OpenForms)
+            {
+                if (f.Name == "frmMain")
+                {
+                    frm = f;
+                }
+            }
+            if (frm != null)
+            {
+                frm.Show();
+            }
+        }
+
+      
+        private void lEmpMain_Click(object sender, EventArgs e)
+        {
+            Form frm = null;
+            foreach (Form f in Application.OpenForms)
+            {
+                if (f.Name == "frmMain")
+                {
+                    frm = f;
+                }
+            }
+            if (frm != null)
+            {
+                frm.Show();
+            }
+        }
+
+        private void lDeals_Click(object sender, EventArgs e)
+        {
+
+            frmDeals usrform = new frmDeals();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+
+        private void ldelivery_Click(object sender, EventArgs e)
+        {
+            FrmDelievery usrform = new FrmDelievery();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+
+        private void lCustomer_Click(object sender, EventArgs e)
+        {
+            frmCustomerRegistration usrform = new frmCustomerRegistration();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+        }
+
+       
+
+
+       
+
+    }
+}
