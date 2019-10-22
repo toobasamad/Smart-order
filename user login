@@ -1,0 +1,180 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Data;
+using System.Data.SqlClient;
+using SmartOrder.Properties;
+namespace SmartOrder
+{
+    class UserLogin
+    {
+
+        public static bool InsertRecord(string UserName, string Password, string EmployeeId, string Status, string UserType)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "INSERT INTO UserLogin(UserName,Password,EmployeeId,Status,UserType) VALUES(@UserName,@Password,@EmployeeId,@Status,@UserType)";
+            cmd.Parameters.AddWithValue("@UserName", UserName);
+            cmd.Parameters.AddWithValue("@Password", Password);
+            cmd.Parameters.AddWithValue("@EmployeeId", EmployeeId);
+            cmd.Parameters.AddWithValue("@Status", Status);
+            cmd.Parameters.AddWithValue("@UserType", UserType);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool UpdateRecord(string UserName, string Password, string EmployeeId, string Status, string UserType)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "UPDATE  UserLogin SET UserName=@UserName,Password=@Password,EmployeeId=@EmployeeId,Status=@Status,UserType=@UserType WHERE UserName = @UserName";
+
+            cmd.Parameters.AddWithValue("@UserName", UserName);
+            cmd.Parameters.AddWithValue("@Password", Password);
+            cmd.Parameters.AddWithValue("@EmployeeId", EmployeeId);
+            cmd.Parameters.AddWithValue("@Status", Status);
+            cmd.Parameters.AddWithValue("@UserType", UserType);
+            
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool DeleteRecord(string UserName)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "DELETE FROM UserLogin WHERE UserName = @UserName";
+            cmd.Parameters.AddWithValue("@UserName", UserName);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static DataTable GetTable()
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM UserLogin";
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab;
+        }
+
+
+        public static bool IsExist(string UserName)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM UserLogin WHERE UserName=@UserName";
+            cmd.Parameters.AddWithValue("@UserName", UserName);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab.Rows.Count > 0;
+        }
+        public static bool IsValidUser(string UserName, string password)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM UserLogin WHERE UserName=@UserName and Password=@Password";
+            cmd.Parameters.AddWithValue("@UserName", UserName);
+            cmd.Parameters.AddWithValue("@Password", password);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab.Rows.Count > 0;
+        }
+        public static UserLog getLoginUser(string UserName, string password)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM UserLogin WHERE UserName=@UserName and Password=@Password";
+            cmd.Parameters.AddWithValue("@UserName", UserName);
+            cmd.Parameters.AddWithValue("@Password", password);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            if (tab.Rows.Count > 0)
+            {
+                UserLog user = new UserLog();
+                user.UserName = tab.Rows[0].ItemArray[0].ToString();
+                user.Password = tab.Rows[0].ItemArray[1].ToString();
+                user.Type = tab.Rows[0].ItemArray[4].ToString();
+                user.Status = tab.Rows[0].ItemArray[3].ToString();
+                return user;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public static string getUserType(string UserName)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT UserType FROM UserLogin WHERE UserName=@UserName";
+            cmd.Parameters.AddWithValue("@UserName", UserName);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            if (tab.Rows.Count > 0)
+            {
+                string UserType;
+                UserType = tab.Rows[0].ItemArray[0].ToString();
+                return UserType; 
+            }
+            else
+            {
+                string UserType;
+                UserType = "You are not admin";
+                return UserType ;
+            }
+        }
+       
+    }
+}
