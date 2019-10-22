@@ -1,0 +1,475 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using GsmComm;
+using GsmComm.GsmCommunication;
+using GsmComm.PduConverter;
+
+namespace SmartOrder
+{
+    public partial class frmMain : Form
+    {
+        DataTable CustomerTab;
+        
+        
+        GsmCommMain GSM; 
+        public static UserLog UserLogined { get; set; }
+
+        public frmMain()
+        {
+            InitializeComponent();
+        }
+
+
+        private void frmMain_Load(object sender, EventArgs e)
+        {
+          
+            FrmLogin login = new FrmLogin();
+            login.ShowDialog();
+            GSM = new GsmCommMain(3, 460800);
+            GSM.MessageReceived += new MessageReceivedEventHandler(GSM_MessageReceived);
+            CustomerTab = Customer.GetTable();
+           // RowIndex = 0;
+            try
+            {
+                if (!GSM.IsOpen())
+                {
+                    GSM.Open();
+                    GSM.EnableMessageNotifications();
+                    lblCompanyOperator.Text = GSM.GetCurrentOperator().TheOperator;
+                    lblSignalStrength.Text = GSM.GetSignalQuality().SignalStrength.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+        void GSM_MessageReceived(object sender, MessageReceivedEventArgs e)
+        {
+            MemoryLocation loc = (MemoryLocation)e.IndicationObject;
+            try
+            {
+                DecodedShortMessage sms = GSM.ReadMessage(loc.Index, loc.Storage);
+                ProcessSMS(sms.Data);
+                // DecodedShortMessage[] dsms = GSM.ReadMessages(PhoneMessageStatus.ReceivedUnread, loc.Storage);
+                //DecodedShortMessage dd = GSM.ReadMessage(loc.Index, loc.Storage);
+                // ProcessSMS(dd.Data);
+                //  MessageBox.Show(dsms.Length.ToString());
+                //foreach (DecodedShortMessage dsm in dsms)
+                //{
+                //    ProcessSMS(dsm.Data);
+                //} 
+                // ProcessSMS(dsms[0].Data);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+        }
+        private void ProcessSMS(SmsPdu pdu)
+        {
+            SmsDeliverPdu MyPdu = (SmsDeliverPdu)pdu;
+            string msg = MyPdu.UserDataText;
+            string FirstPart, SecondPart, Address, phone, UserName, CustomerId, Id, reply;
+            float total;
+            reply = "";
+            phone = MyPdu.OriginatingAddress;
+            if (msg.Contains("@") && msg.Substring(0, 1) == "O")
+            {
+                msg = msg.Remove(0, 2);
+                string msg2 = msg;
+                msg2 = msg2.Remove(msg2.IndexOf('@'));
+                string[] parts = msg2.Split('.');
+                total = 0;
+                UserName = FrmLogin.UserLoginName;
+                CustomerId = Customer.CustomerId(phone);
+                if (OrderTable.InsertRecord(getOrderId().ToString(), CustomerId, System.DateTime.Now.ToString(), UserName, "Pending"))
+                {
+                    MessageBox.Show("Order Recieved please check order");
+                }
+                foreach (string s in parts)
+                {
+                    if (s != "")
+                    {
+                        FirstPart = s.Substring(0, s.IndexOf(','));
+                        SecondPart = s.Substring(s.IndexOf(',') + 1);
+                        if (FirstPart != "@")
+                        {
+                            if (Deals.IsExist(FirstPart))
+                            {
+                                if (msg.LastIndexOf("xxx") > 0)
+                                {
+                                    Address = Customer.Address(phone);
+
+                                    float dealprice, qty, discount;
+                                    // qty = float.Parse(SecondPart.ToString());
+                                    float.TryParse(SecondPart, out qty);
+                                    discount = Deals.Discount(FirstPart);
+                                    dealprice = (Deals.DPrice(FirstPart) * qty)-(Deals.DPrice(FirstPart) * qty*discount/100);
+                                    total = dealprice;
+
+                                    Id = OrderTable.Id(CustomerId);
+                                    if (OrderDetail.InsertRecord(Id, FirstPart, SecondPart, total.ToString(), Address))
+                                    {
+                                        reply = "your order has been placed";
+                                    }
+
+                                }
+                                else
+                                {
+                                    Address = msg.Substring(msg.LastIndexOf("@")+1);
+                                    if (Address.Length > 0)
+                                    {
+
+                                        float dealprice, qty;
+                                        // qty = float.Parse(SecondPart.ToString());
+                                        float.TryParse(SecondPart, out qty);
+
+                                        dealprice = Deals.DPrice(FirstPart) * qty;
+                                        total = dealprice;
+                                        Id = OrderTable.Id(CustomerId);
+                                        if (OrderDetail.InsertRecord(Id, FirstPart, SecondPart, total.ToString(), Address))
+                                        {
+                                            reply = "Your Order has been placed";
+
+                                        }
+
+                                    }
+
+
+                                    else
+                                    {
+                                        reply = "Invalid Address";
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                reply = "Sorry Deals doesnot exist";
+                            }
+                        }
+                    }
+
+
+                }
+                SmsSubmitPdu replypdu = new SmsSubmitPdu(reply, phone);
+                GSM.SendMessage((OutgoingSmsPdu)replypdu);
+            }
+            else if (msg.Contains("Info"))
+            {
+                SmsSubmitPdu subpdu = new SmsSubmitPdu(Deals.GetDealsData(), phone);
+                GSM.SendMessage((OutgoingSmsPdu)subpdu);
+            }
+            else if (msg.Contains("Feedback"))
+            {
+                msg = msg.Remove(0,9);
+                string Message = msg;
+                CustomerId = Customer.CustomerId(phone);
+                if (feedbacktable.InsertRecord(feedbackId().ToString(),CustomerId,Message))
+                {
+                    SmsSubmitPdu subpdu = new SmsSubmitPdu("Thankyou for your feedback", phone);
+                    GSM.SendMessage((OutgoingSmsPdu)subpdu);
+                    notifyIcon1.ShowBalloonTip(200, "Feedback", "feedback recieved", ToolTipIcon.Info);
+                }
+            }
+        
+            else
+            {
+                SmsSubmitPdu subpdu = new SmsSubmitPdu("Invalid Message", phone);
+                GSM.SendMessage((OutgoingSmsPdu)subpdu);
+            }
+
+        }
+    
+    private int getOrderId()
+        {
+            DataTable OrderTab;
+            int max = 0, id = 0;
+            OrderTab = OrderTable.GetTable();
+            foreach (DataRow drow in OrderTab.Rows)
+            {
+                id = int.Parse(drow.ItemArray[0].ToString());
+                if (id > max)
+                {
+                    max = id;
+
+                }
+            }
+
+            return max + 1;
+        }
+        private int feedbackId()
+        {
+            DataTable feedbackTab;
+            int max = 0, id = 0;
+            feedbackTab = feedbacktable.GetTable();
+            foreach (DataRow drow in feedbackTab.Rows)
+            {
+                id = int.Parse(drow.ItemArray[0].ToString());
+                if (id > max)
+                {
+                    max = id;
+
+                }
+            }
+
+            return max + 1;
+        }
+
+        public void  sendMessage(string number , string sms)
+        {
+            SmsSubmitPdu subpdu = new SmsSubmitPdu(sms, number);
+            GSM.SendMessage((OutgoingSmsPdu)subpdu); 
+        }
+
+        private void timer1_Tick_1(object sender, EventArgs e)
+        {
+            if (GSM != null)
+            {
+                if (GSM.IsOpen())
+                {
+                    lblSignalStrength.Text = GSM.GetSignalQuality().SignalStrength.ToString();
+                }
+            }
+        }
+
+        private void lblCustomerReport_Click(object sender, EventArgs e)
+        {
+            dsCustomer11.Clear();
+            DACustomer.Fill(dsCustomer11);
+            CustomerReport Customer = new CustomerReport();
+            frmCustomerReport Report = new frmCustomerReport();
+            Customer.SetDataSource(dsCustomer11);
+
+            Report.CRVCustomerReport.ReportSource = Customer;
+
+            Report.Show();
+        }
+
+        private void lblEmployeeReport_Click(object sender, EventArgs e)
+        {
+
+            dsEmployee1.Clear();
+            DAEmployee.Fill(dsEmployee1);
+            rptEmployees Employee = new rptEmployees();
+            frmReport Report = new frmReport();
+            Employee.SetDataSource(dsEmployee1);
+
+            Report.CRV.ReportSource = Employee;
+
+            Report.Show();
+        }
+
+        private void lblOrder_Click(object sender, EventArgs e)
+        {
+            dsOrderTable11.Clear();
+            DAOrderTable.Fill(dsOrderTable11);
+            OrderReport Order = new OrderReport();
+            frmOrderTable Report = new frmOrderTable();
+            Order.SetDataSource(dsOrderTable11);
+
+            Report.CRVOrderTable.ReportSource = Order;
+
+            Report.Show();
+        }
+
+        private void lblOrderDetail_Click(object sender, EventArgs e)
+        {
+
+            dsOrderDetail21.Clear();
+            DAOrderDetail.Fill(dsOrderDetail21);
+            OrderDetailReport OrderDetail = new OrderDetailReport();
+            frmOrderDetailReport Report = new frmOrderDetailReport();
+            OrderDetail.SetDataSource(dsOrderDetail21);
+
+            Report.CRVOrderDetail.ReportSource = OrderDetail;
+
+            Report.Show();
+        }
+
+        private void lblDeals_Click(object sender, EventArgs e)
+        {
+            dsDeals11.Clear();
+            DADeals.Fill(dsDeals11);
+            DealsReport Deals = new DealsReport();
+            FrmDealReport Report = new FrmDealReport();
+            Deals.SetDataSource(dsDeals11);
+
+            Report.CrvDeals.ReportSource = Deals;
+
+            Report.Show();
+        }
+
+        private void lblAttendanceReport_Click(object sender, EventArgs e)
+        {
+            dsAttendence1.Clear();
+            DAAttendence.Fill(dsAttendence1);
+            AttendanceReport Attendance = new AttendanceReport();
+            frmAttendanceReport Report = new frmAttendanceReport();
+            Attendance.SetDataSource(dsAttendence1);
+
+            Report.CRVAttendance.ReportSource = Attendance;
+
+            Report.Show();
+        }
+
+        private void lblDeliveryReport_Click(object sender, EventArgs e)
+        {
+            dsDelivery1.Clear();
+            DADelivery.Fill(dsDelivery1);
+            DeliveryReport Delivery = new DeliveryReport();
+            frmDeliveryReport Report = new frmDeliveryReport();
+            Delivery.SetDataSource(dsDelivery1);
+
+            Report.CRVDelivery.ReportSource = Delivery;
+
+            Report.Show();
+        }
+
+        private void lblUserReport_Click(object sender, EventArgs e)
+        {
+            dsUserReport1.Clear();
+            DAUserReport.Fill(dsUserReport1);
+            UserReport User = new UserReport();
+            frmUserReport Report = new frmUserReport();
+            User.SetDataSource(dsUserReport1);
+
+            Report.CRVUserReport.ReportSource = User;
+
+            Report.Show();
+        }
+
+        private void lblCustomer_Click(object sender, EventArgs e)
+        {
+            string UserName = FrmLogin.UserLoginName;
+            string UserType;
+            UserType = UserLogin.getUserType(UserName).ToString();
+            if (UserType.Equals("Admin"))
+            {
+                frmCustomerRegistration reg = new frmCustomerRegistration();
+                reg.MdiParent = this.MdiParent;
+                this.Hide();
+                reg.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show("Sorry you are not admin");
+            }
+        }
+
+        private void lblEmployee_Click(object sender, EventArgs e)
+        {
+            string UserName = FrmLogin.UserLoginName;
+            string UserType;
+            UserType = UserLogin.getUserType(UserName).ToString();
+            if (UserType.Equals("Admin"))
+            {
+                frmEmployeeRegistration empform = new frmEmployeeRegistration();
+                empform.MdiParent = this.MdiParent;
+                this.Hide();
+                empform.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show("Sorry you are not admin");
+            }
+            
+        }
+
+        private void lblUser_Click(object sender, EventArgs e)
+        {
+            string UserName = FrmLogin.UserLoginName;
+            string UserType;
+            UserType = UserLogin.getUserType(UserName).ToString();
+            if (UserType.Equals("Admin"))
+            {
+                frmUserRegistration usrform = new frmUserRegistration();
+                usrform.MdiParent = this.MdiParent;
+                this.Hide();
+                usrform.ShowDialog(); 
+            }
+            else
+            {
+                MessageBox.Show("Sorry you are not admin");
+            }
+            
+        }
+
+        private void lblFrmDeal_Click(object sender, EventArgs e)
+        {
+            string UserName = FrmLogin.UserLoginName;
+            string UserType;
+            UserType = UserLogin.getUserType(UserName).ToString();
+            if (UserType.Equals("Admin"))
+            {
+                frmDeals dealform = new frmDeals();
+                dealform.MdiParent = this.MdiParent;
+                this.Hide();
+                dealform.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show("Sorry you are not admin");
+            }
+            
+            
+        }
+
+        private void lblAttendance_Click(object sender, EventArgs e)
+        {
+            string UserName = FrmLogin.UserLoginName;
+            string UserType;
+            UserType = UserLogin.getUserType(UserName).ToString();
+            if (UserType.Equals("Admin"))
+            {
+                Formidentify usrform = new Formidentify();
+                usrform.MdiParent = this.MdiParent;
+                this.Hide();
+                usrform.ShowDialog();
+            }
+            else
+            {
+                MessageBox.Show("Sorry you are not admin");
+            }
+           
+        }
+
+        private void lblDelivery_Click(object sender, EventArgs e)
+        {
+            FrmDelievery usrform = new FrmDelievery();
+            usrform.MdiParent = this.MdiParent;
+            this.Hide();
+            usrform.ShowDialog();
+
+        }
+
+        private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+            dsFeedBack1.Clear();
+            DAFeedBack.Fill(dsFeedBack1);
+            FeedBackReport feedback = new FeedBackReport();
+            frmFeedback Report = new frmFeedback();
+            feedback.SetDataSource(dsFeedBack1);
+
+            Report.crFeedback.ReportSource = feedback;
+
+            Report.Show();
+        }
+
+        
+    }
+ }
+
+
