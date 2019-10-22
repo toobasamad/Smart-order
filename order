@@ -1,0 +1,185 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Data;
+using System.Data.SqlClient;
+using SmartOrder.Properties;
+using System.Windows.Forms;
+namespace SmartOrder
+{
+    class OrderTable
+    {
+
+        public static bool InsertRecord(string OrderId, string CustomerId, string ODateTime, string UserName, string OStatus)
+        {
+            try
+            {
+                SqlConnection con = new SqlConnection(Connection.ConnectionString);
+                SqlCommand cmd = new SqlCommand();
+                cmd.Connection = con;
+                cmd.CommandText = "INSERT INTO OrderTable VALUES (@Sender Id,@Number,@Donation Amount,@Date&Time)";
+                cmd.Parameters.AddWithValue("@OrderId", OrderId);
+                cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
+                cmd.Parameters.AddWithValue("@ODateTime", ODateTime);
+                cmd.Parameters.AddWithValue("@UserName", UserName);
+                cmd.Parameters.AddWithValue("@OStatus", OStatus);
+                cmd.Connection.Open();
+                if (cmd.ExecuteNonQuery() == 1)
+                {
+                    con.Close();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return false;
+            }
+        }
+        public static bool UpdateRecord(string OrderId, string CustomerId, string ODateTime, string UserName, string OStatus)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "UPDATE  OrderTable SET CustomerId=@CustomerId,ODateTime=@ODateTime,UserName=@UserName,OStatus=@OStatus WHERE OrderId = @OrderId";
+            cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
+            cmd.Parameters.AddWithValue("@ODateTime", ODateTime);
+            cmd.Parameters.AddWithValue("@UserName", UserName);
+            cmd.Parameters.AddWithValue("@OStatus", OStatus);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool DeleteRecord(string OrderId)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "DELETE FROM OrderTable WHERE OrderId = @OrderId";
+            cmd.Parameters.AddWithValue("@OrderId", OrderId);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static DataTable GetTable()
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM OrderTable";
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab;
+        }
+        public static bool IsExist(string OrderId)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM OrderTable WHERE OrderId = @OrderId";
+            cmd.Parameters.AddWithValue("@UserName", OrderId);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab.Rows.Count > 0;
+        }
+        public static string Id(string CustomerId)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM OrderTable WHERE CustomerId=@CustomerId";
+            cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+
+            if (tab.Rows.Count > 0)
+            {
+                string OrderId;
+                OrderId = tab.Rows[tab.Rows.Count - 1].ItemArray[0].ToString();
+                return OrderId;
+            }
+            else
+            {
+
+
+                return "no id found";
+            }
+        }
+        public static string CustomerId(string OrderId)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT CustomerId FROM OrderTable WHERE OrderId=@OrderId";
+            cmd.Parameters.AddWithValue("@OrderId", OrderId);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            if (tab.Rows.Count > 0)
+            {
+                string CustomerId;
+                CustomerId = tab.Rows[0].ItemArray[0].ToString();
+                return CustomerId;
+            }
+            else
+            {
+
+
+                return "no Id found";
+            }
+        }
+        public static bool UpdateStatus(string OrderId,string OStatus)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "UPDATE  OrderTable SET OStatus=@OStatus WHERE OrderId = @OrderId";
+            cmd.Parameters.AddWithValue("@OStatus", OStatus);
+            cmd.Parameters.AddWithValue("@OrderId", OrderId);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+}
+
+
