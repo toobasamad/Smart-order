@@ -1,0 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace SmartOrder
+{
+    class Connection
+    {
+        public static  string ConnectionString { get; set; }
+        static Connection()
+        { 
+          Connection.ConnectionString =@"Data Source=.\sqlexpress;AttachDbFilename=C:\Program Files\Microsoft SQL Server\MSSQL10.SQLEXPRESS\MSSQL\DATA\SmartOrder.mdf;Integrated Security=TrueData Source=.\sqlexpress;AttachDbFilename=C:\Program Files\Microsoft SQL Server\MSSQL10.SQLEXPRESS\MSSQL\DATA\SmartOrder.mdf;Integrated Security=True";
+        }
+    }
+}
