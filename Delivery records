@@ -1,0 +1,109 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Data;
+using System.Data.SqlClient;
+using SmartOrder.Properties;
+namespace SmartOrder
+
+
+{
+    class Delivery
+    {
+          
+        public static bool InsertRecord(string DeliveryId,string OrderId,string EmployeeId,string DDateTime,string PaymentRecieved)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "INSERT INTO Delivery(DeliveryId,OrderId,EmployeeId,DDateTime,PaymentRecieved) VALUES(@DeliveryId,@OrderId,@EmployeeId,@DDateTime,@PaymentRecieved)";
+            cmd.Parameters.AddWithValue("@DeliveryId",DeliveryId);
+            cmd.Parameters.AddWithValue("@OrderId", OrderId);
+            cmd.Parameters.AddWithValue("@EmployeeId", EmployeeId);
+            cmd.Parameters.AddWithValue("@DDateTime", DDateTime);
+            cmd.Parameters.AddWithValue("@PaymentRecieved",PaymentRecieved);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool UpdateRecord(string DeliveryId,string OrderId,string EmployeeId,string DDateTime,string PaymentRecieved)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "UPDATE  Delivery SET OrderId=@OrderId,EmployeeId=@EmployeeId,DDateTime=@DDateTime,PaymentRecieved=@PaymentRecieved WHERE DeliveryId = @DeliveryId";
+            cmd.Parameters.AddWithValue("@DeliveryId", DeliveryId);
+            cmd.Parameters.AddWithValue("@OrderId", OrderId);
+            cmd.Parameters.AddWithValue("@EmployeeId", EmployeeId);
+            cmd.Parameters.AddWithValue("@DDateTime", DDateTime);
+            cmd.Parameters.AddWithValue("@PaymentRecieved",PaymentRecieved);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool DeleteRecord(string DeliveryId)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "DELETE FROM Delivery WHERE DeliveryId = @DeliveryId";
+            cmd.Parameters.AddWithValue("@DeliveryId", DeliveryId);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static DataTable GetTable()
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM Delivery";
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab );
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab;
+        }
+
+        public static bool IsExist(string DeliveryId)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM Delivery WHERE DeliveryId=@DeliveryId";
+            cmd.Parameters.AddWithValue("@DeliveryId", DeliveryId);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab.Rows.Count > 0;
+        }       
+        
+    }
+}
