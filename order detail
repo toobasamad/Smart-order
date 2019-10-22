@@ -1,0 +1,115 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Data;
+using System.Data.SqlClient;
+using SmartOrder.Properties;
+using System.Windows.Forms;
+namespace SmartOrder
+{
+    class OrderDetail
+    {
+
+        public static bool InsertRecord(string OrderId, string DealName, string Quantity, string Oprice, string OAddress)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "INSERT INTO OrderDetail VALUES(@OrderId,@DealName,@Quantity,@Oprice,@OAddress)";
+            cmd.Parameters.AddWithValue("@OrderId", OrderId);
+            cmd.Parameters.AddWithValue("@DealName", DealName);
+            cmd.Parameters.AddWithValue("@Quantity", Quantity);
+            cmd.Parameters.AddWithValue("@Oprice", Oprice);
+            cmd.Parameters.AddWithValue("@OAddress", @OAddress);
+            cmd.Connection.Open();
+            try
+            {
+                if (cmd.ExecuteNonQuery() == 1)
+                {
+                    con.Close();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return false;
+            }
+        }
+        public static bool UpdateRecord(string OrderId, string DealId, string Quantity, string Oprice)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "UPDATE  OrderDetail SET Quantity=@Quantity,Oprice=@Oprice WHERE OrderId = @OrderId and DealId = @DealId";
+            cmd.Parameters.AddWithValue("@Quantity", Quantity);
+            cmd.Parameters.AddWithValue("@Status", Oprice);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool DeleteRecord(string OrderId, string DealId)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "DELETE FROM UserLogin WHERE OrderId = @OrderId and DealId = @DealId";
+            cmd.Parameters.AddWithValue("@OrderId", OrderId);
+            cmd.Parameters.AddWithValue("@DealId", DealId);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static DataTable GetTable()
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM OrderDetail";
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab;
+        }
+        public static bool IsExist(string OrderId, string DealId)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM OrderDetail WHERE OrderId = @OrderId and DealId= @DealId";
+            cmd.Parameters.AddWithValue("@UserName", OrderId);
+            cmd.Parameters.AddWithValue("@DealName", DealId);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab.Rows.Count > 0;
+        }
+    }
+}
+
+
