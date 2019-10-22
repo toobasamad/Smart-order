@@ -1,0 +1,202 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Data;
+using System.Data.SqlClient;
+using SmartOrder.Properties;
+namespace SmartOrder
+{
+    class Customer
+    {
+
+        public static bool InsertRecord(string CustomerId, string CustomerName, string CustomerAddress, string CellPhone, string HomePhone,  string DOB, string CNIC)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "INSERT INTO Customer(CustomerId,CustomerName,CustomerAddress,CellPhone,HomePhone,DOB,CNIC) VALUES(@CustomerId,@CustomerName,@CustomerAddress,@CellPhone,@HomePhone,@DOB,@CNIC)";
+            cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
+            cmd.Parameters.AddWithValue("@CustomerName", CustomerName);
+            cmd.Parameters.AddWithValue("@CustomerAddress", CustomerAddress);
+            cmd.Parameters.AddWithValue("@CellPhone", CellPhone);
+            cmd.Parameters.AddWithValue("@HomePhone", HomePhone);
+            cmd.Parameters.AddWithValue("@DOB", DOB);
+            cmd.Parameters.AddWithValue("@CNIC", CNIC);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool UpdateRecord(string CustomerId, string CustomerName, string CustomerAddress, string CellPhone, string HomePhone, string DOB, string CNIC)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "UPDATE  Customer SET CustomerName=@CustomerName,CustomerAddress=@CustomerAddress,CellPhone=@CellPhone,HomePhone=@HomePhone,DOB=@DOB,CNIC=@CNIC WHERE CustomerId = @CustomerId";
+            cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
+            cmd.Parameters.AddWithValue("@CustomerName", CustomerName);
+            cmd.Parameters.AddWithValue("@CustomerAddress", CustomerAddress);
+            cmd.Parameters.AddWithValue("@CellPhone", CellPhone);
+            cmd.Parameters.AddWithValue("@HomePhone", HomePhone);
+            cmd.Parameters.AddWithValue("@DOB", DOB);
+            cmd.Parameters.AddWithValue("@CNIC",CNIC);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool DeleteRecord(string CustomerId)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "DELETE FROM Customer WHERE CustomerId= @CustomerId";
+            cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
+            cmd.Connection.Open();
+            if (cmd.ExecuteNonQuery() == 1)
+            {
+                con.Close();
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static DataTable GetTable()
+        {
+
+            SqlConnection con = new SqlConnection("Data Source=.\\sqlexpress;Initial Catalog=\"C:\\PROGRAM FILES\\MICROSOFT SQL SERVER\\MSSQL10.SQLEXPRESS\\MSSQL\\DATA\\SMARTORDER.MDF\";Integrated Security=True");
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM Customer";
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab;
+        }
+        public static bool IsExist(string CustomerId)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM Customer WHERE CustomerId = @CustomerId";
+            cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab.Rows.Count > 0;
+        }
+        public static bool IsExistCnic(string CNIC)
+        {
+
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT * FROM Customer WHERE CNIC = @CNIC";
+            cmd.Parameters.AddWithValue("@CNIC", CNIC);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            return tab.Rows.Count > 0;
+        }
+        public static string Address(string CellPhone)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT CustomerAddress FROM Customer WHERE CellPhone=@CellPhone";
+            cmd.Parameters.AddWithValue("@CellPhone", CellPhone);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            if (tab.Rows.Count > 0)
+            {
+                string Address;
+                Address = tab.Rows[0].ItemArray[0].ToString();
+                return Address;
+            }
+            else
+            {
+
+
+                return "no Address";
+            }
+        }
+        public static string CustomerId(string CellPhone)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT CustomerId FROM Customer WHERE CellPhone=@CellPhone";
+            cmd.Parameters.AddWithValue("@CellPhone", CellPhone);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            if (tab.Rows.Count > 0)
+            {
+                string CustomerId;
+                CustomerId = tab.Rows[0].ItemArray[0].ToString();
+                return CustomerId;
+            }
+            else
+            {
+
+
+                return "no id found";
+            }
+        }
+        public static string Phone(string CustomerId)
+        {
+            SqlConnection con = new SqlConnection(Connection.ConnectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "SELECT CellPhone FROM Customer WHERE CustomerId=@CustomerId";
+            cmd.Parameters.AddWithValue("@CustomerId", CustomerId);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataTable tab = new DataTable();
+            da.SelectCommand = cmd;
+            da.Fill(tab);
+            da.FillSchema(tab, SchemaType.Mapped);
+            if (tab.Rows.Count > 0)
+            {
+                string Phone;
+                Phone = tab.Rows[0].ItemArray[0].ToString();
+                return Phone;
+            }
+            else
+            {
+
+
+                return "no phone number found";
+            }
+        }
+    }
+
+}
+
+
